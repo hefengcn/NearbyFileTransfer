@@ -1,6 +1,7 @@
 package com.tab.demo.nearby;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -17,6 +18,7 @@ import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.collection.SimpleArrayMap;
 import androidx.core.content.ContextCompat;
 
 import com.google.android.gms.nearby.Nearby;
@@ -34,6 +36,7 @@ import com.google.android.gms.nearby.connection.PayloadTransferUpdate;
 import com.google.android.gms.nearby.connection.PayloadTransferUpdate.Status;
 import com.google.android.gms.nearby.connection.Strategy;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.nio.charset.StandardCharsets;
 import java.util.Random;
@@ -53,6 +56,9 @@ public class MainActivity extends AppCompatActivity {
                     Manifest.permission.ACCESS_WIFI_STATE,
                     Manifest.permission.CHANGE_WIFI_STATE,
                     Manifest.permission.ACCESS_COARSE_LOCATION,
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                    Manifest.permission.ACCESS_FINE_LOCATION
             };
 
     private static final int REQUEST_CODE_REQUIRED_PERMISSIONS = 1;
@@ -96,38 +102,60 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    private static final String ENDPOINT_ID_EXTRA = "com.foo.myapp.EndpointId";
+
     public void sendFile(View view) {
-        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+//        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+//        intent.setType("image/*");
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("image/*");
+        intent.putExtra(ENDPOINT_ID_EXTRA, mEndpointId);
         startActivityForResult(intent, REQUEST_GET_CONTENT);
     }
 
+
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == REQUEST_GET_CONTENT) {
-            super.onActivityResult(requestCode, resultCode, data);
-            Uri uri = data.getData();
+    public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
+        if (requestCode == REQUEST_GET_CONTENT
+                && resultCode == Activity.RESULT_OK
+                && resultData != null) {
+            String endpointId = resultData.getStringExtra(ENDPOINT_ID_EXTRA);
+
+            // The URI of the file selected by the user.
+            Uri uri = resultData.getData();
+            Log.d(TAG, "uri = " + uri);
             Payload filePayload;
             try {
                 // Open the ParcelFileDescriptor for this URI with read access.
                 ParcelFileDescriptor pfd = getContentResolver().openFileDescriptor(uri, "r");
                 filePayload = Payload.fromFile(pfd);
+                Log.d(TAG, "filePayload = " + filePayload.getId());
+
             } catch (FileNotFoundException e) {
-                Log.e(TAG, "File not found", e);
+                Log.e("MyApp", "File not found", e);
                 return;
             }
+
             // Construct a simple message mapping the ID of the file payload to the desired filename.
             String filenameMessage = filePayload.getId() + ":" + uri.getLastPathSegment();
+            Log.d(TAG, "filenameMessage = " + filenameMessage);
             // Send the filename message as a bytes payload.
-            Payload filenameBytesPayload = Payload.fromBytes(filenameMessage.getBytes(StandardCharsets.UTF_8));
+            Payload filenameBytesPayload =
+                    Payload.fromBytes(filenameMessage.getBytes(StandardCharsets.UTF_8));
+            Log.d(TAG, "filenameBytesPayload.getId() = " + filenameBytesPayload.getId());
+            Log.d(TAG, "filenameBytesPayload.getType() = " + filenameBytesPayload.getType());
             connectionsClient.sendPayload(mEndpointId, filenameBytesPayload);
+            Log.d(TAG, "filePayload = " + filePayload.getId());
+            Log.d(TAG, "filePayload.getType() = " + filePayload.getType());
             // Finally, send the file payload.
             connectionsClient.sendPayload(mEndpointId, filePayload);
         }
     }
 
+
     // Callbacks for receiving payloads
-    private final PayloadCallback payloadCallback =
+   /* private final PayloadCallback payloadCallback =
             new PayloadCallback() {
                 @Override
                 public void onPayloadReceived(String endpointId, Payload payload) {
@@ -141,7 +169,75 @@ public class MainActivity extends AppCompatActivity {
                     if (update.getStatus() == Status.SUCCESS) {
                     }
                 }
-            };
+            };*/
+
+    private final SimpleArrayMap<Long, Payload> incomingFilePayloads = new SimpleArrayMap<>();
+    private final SimpleArrayMap<Long, Payload> completedFilePayloads = new SimpleArrayMap<>();
+    private final SimpleArrayMap<Long, String> filePayloadFilenames = new SimpleArrayMap<>();
+
+    private final PayloadCallback payloadCallback = new PayloadCallback() {
+
+        @Override
+        public void onPayloadReceived(String endpointId, Payload payload) {
+            Log.d(TAG, "onPayloadReceived, payload.getType() = " + payload.getType());
+            if (payload.getType() == Payload.Type.BYTES) {
+                String payloadFilenameMessage = new String(payload.asBytes(), StandardCharsets.UTF_8);
+                Log.d(TAG, "payloadFilenameMessage = " + payloadFilenameMessage);
+                long payloadId = addPayloadFilename(payloadFilenameMessage);
+                processFilePayload(payloadId);
+            } else if (payload.getType() == Payload.Type.FILE) {
+                // Add this to our tracking map, so that we can retrieve the payload later.
+                incomingFilePayloads.put(payload.getId(), payload);
+            }
+        }
+
+        /**
+         * Extracts the payloadId and filename from the message and stores it in the
+         * filePayloadFilenames map. The format is payloadId:filename.
+         */
+        private long addPayloadFilename(String payloadFilenameMessage) {
+            String[] parts = payloadFilenameMessage.split(":");
+            long payloadId = Long.parseLong(parts[0]);
+            String filename = parts[1];
+            filePayloadFilenames.put(payloadId, filename);
+            return payloadId;
+        }
+
+        private void processFilePayload(long payloadId) {
+            // BYTES and FILE could be received in any order, so we call when either the BYTES or the FILE
+            // payload is completely received. The file payload is considered complete only when both have
+            // been received.
+            Log.d(TAG, "processFilePayload ");
+            Payload filePayload = completedFilePayloads.get(payloadId);
+            String filename = filePayloadFilenames.get(payloadId);
+            if (filePayload != null && filename != null) {
+                completedFilePayloads.remove(payloadId);
+                filePayloadFilenames.remove(payloadId);
+
+                // Get the received file (which will be in the Downloads folder)
+                File payloadFile = filePayload.asFile().asJavaFile();
+
+                // Rename the file.
+                payloadFile.renameTo(new File(payloadFile.getParentFile(), filename));
+            }
+        }
+
+        @Override
+        public void onPayloadTransferUpdate(String endpointId, PayloadTransferUpdate update) {
+            if (update.getStatus() == PayloadTransferUpdate.Status.SUCCESS) {
+                Log.d(TAG, "PayloadTransferUpdate.Status.SUCCESS");
+                long payloadId = update.getPayloadId();
+                Payload payload = incomingFilePayloads.remove(payloadId);
+                if (payload != null) {
+                    Log.d(TAG, "payload.getType() " + payload.getType());
+                    completedFilePayloads.put(payloadId, payload);
+                    if (payload.getType() == Payload.Type.FILE) {
+                        processFilePayload(payloadId);
+                    }
+                }
+            }
+        }
+    };
 
     // Callbacks for finding other devices
     private final EndpointDiscoveryCallback endpointDiscoveryCallback =
