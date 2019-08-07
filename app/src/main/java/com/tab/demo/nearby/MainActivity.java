@@ -20,6 +20,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.collection.SimpleArrayMap;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 
 import com.google.android.gms.nearby.Nearby;
 import com.google.android.gms.nearby.connection.AdvertisingOptions;
@@ -210,6 +211,7 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "processFilePayload ");
             Payload filePayload = completedFilePayloads.get(payloadId);
             String filename = filePayloadFilenames.get(payloadId);
+
             if (filePayload != null && filename != null) {
                 completedFilePayloads.remove(payloadId);
                 filePayloadFilenames.remove(payloadId);
@@ -217,8 +219,17 @@ public class MainActivity extends AppCompatActivity {
                 // Get the received file (which will be in the Downloads folder)
                 File payloadFile = filePayload.asFile().asJavaFile();
 
-                // Rename the file.
-                payloadFile.renameTo(new File(payloadFile.getParentFile(), filename));
+                String randomFileName = "/nearby_shared-" + System.currentTimeMillis() + ".jpg";
+                payloadFile.renameTo(new File(payloadFile.getParentFile(), randomFileName));
+                Log.d(TAG, "payloadFile =  " + payloadFile.toString());
+
+                if (payloadFile != null) {
+                    Uri uri = FileProvider.getUriForFile(MainActivity.this, "com.tab.demo.nearby", payloadFile);
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    intent.setDataAndType(uri, "image/*");
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    MainActivity.this.startActivity(intent);
+                }
             }
         }
 
