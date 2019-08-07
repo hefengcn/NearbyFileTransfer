@@ -36,6 +36,7 @@ import com.google.android.gms.nearby.connection.Strategy;
 
 import java.io.FileNotFoundException;
 import java.nio.charset.StandardCharsets;
+import java.util.Random;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -60,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String SERVICE_ID = "com.tab.demo.nearby";
     private static final String NICK_NAME = Build.DEVICE;
     private ConnectionsClient connectionsClient;
-    private String endpointId;
+    private String mEndpointId;
     private String peerName;
     private TextView txtRemoteName;
     private TextView txtStatus;
@@ -90,8 +91,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void sendBytes(View view) {
-        String command = "hello";
-        connectionsClient.sendPayload(endpointId, Payload.fromBytes(command.getBytes(UTF_8)));
+        String str = String.valueOf(new Random().nextInt(100));
+        connectionsClient.sendPayload(mEndpointId, Payload.fromBytes(str.getBytes(UTF_8)));
 
     }
 
@@ -119,9 +120,9 @@ public class MainActivity extends AppCompatActivity {
             String filenameMessage = filePayload.getId() + ":" + uri.getLastPathSegment();
             // Send the filename message as a bytes payload.
             Payload filenameBytesPayload = Payload.fromBytes(filenameMessage.getBytes(StandardCharsets.UTF_8));
-            connectionsClient.sendPayload(endpointId, filenameBytesPayload);
+            connectionsClient.sendPayload(mEndpointId, filenameBytesPayload);
             // Finally, send the file payload.
-            connectionsClient.sendPayload(endpointId, filePayload);
+            connectionsClient.sendPayload(mEndpointId, filePayload);
         }
     }
 
@@ -170,7 +171,7 @@ public class MainActivity extends AppCompatActivity {
                 public void onConnectionResult(String endpointId, ConnectionResolution result) {
                     if (result.getStatus().isSuccess()) {
                         Log.i(TAG, "onConnectionResult: connection successful");
-                        MainActivity.this.endpointId = endpointId;
+                        mEndpointId = endpointId;
                         txtRemoteName.setText(peerName);
                         txtStatus.setText(getString(R.string.status_connected));
                     } else {
@@ -181,7 +182,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onDisconnected(String endpointId) {
                     Log.i(TAG, "onDisconnected: disconnected from the opponent");
-                    resetView();
+                    txtStatus.setText(getString(R.string.status_disconnected));
                 }
             };
 
@@ -211,8 +212,8 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onStop() {
-        connectionsClient.stopAllEndpoints();
-        resetView();
+//        connectionsClient.stopAllEndpoints();
+//        resetView();
         super.onStop();
     }
 
@@ -252,12 +253,16 @@ public class MainActivity extends AppCompatActivity {
         recreate();
     }
 
+    public void connect(View view) {
+        Log.i(TAG, "connect clicked");
+        if (mEndpointId != null)
+            connectionsClient.requestConnection(NICK_NAME, mEndpointId, connectionLifecycleCallback);
+    }
 
     public void disconnect(View view) {
         Log.i(TAG, "disconnect clicked");
-        if (endpointId != null)
-            connectionsClient.disconnectFromEndpoint(endpointId);
-        resetView();
+        if (mEndpointId != null)
+            connectionsClient.disconnectFromEndpoint(mEndpointId);
     }
 
 

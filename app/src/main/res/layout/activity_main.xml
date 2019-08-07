@@ -23,7 +23,7 @@
     <TextView
         android:id="@+id/bytes_received"
         android:layout_width="match_parent"
-        android:layout_height="160dp"
+        android:layout_height="120dp"
         android:gravity="center"
         android:textSize="80sp" />
 
@@ -46,7 +46,7 @@
         style="@style/Widget.AppCompat.Button.Colored"
         android:layout_width="match_parent"
         android:layout_height="60dp"
-        android:layout_marginTop="60dp"
+        android:layout_marginTop="20dp"
         android:onClick="startAdvertising"
         android:text="@string/start_advertising" />
 
@@ -56,6 +56,14 @@
         android:layout_height="60dp"
         android:onClick="startDiscovery"
         android:text="@string/start_discovery" />
+
+    <Button
+        style="@style/Widget.AppCompat.Button.Colored"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_marginTop="20dp"
+        android:onClick="connect"
+        android:text="@string/action_connect" />
 
     <Button
         style="@style/Widget.AppCompat.Button.Colored"
