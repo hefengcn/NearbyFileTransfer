@@ -5,53 +5,62 @@
     android:layout_margin="16dp"
     android:orientation="vertical">
 
-  <TextView
-      android:id="@+id/client_name"
-      style="@style/StatusText"/>
+    <TextView
+        android:id="@+id/local_nick_name"
+        style="@style/StatusText"
+        android:layout_height="60dp" />
 
-  <TextView
-      android:id="@+id/opponent_name"
-      style="@style/StatusText"/>
+    <TextView
+        android:id="@+id/remote_nick_name"
+        style="@style/StatusText"
+        android:layout_height="60dp" />
 
-  <TextView
-      android:id="@+id/status"
-      style="@style/StatusText"/>
+    <TextView
+        android:id="@+id/status"
+        style="@style/StatusText"
+        android:layout_height="60dp" />
 
-  <TextView
-      android:id="@+id/command"
-      android:layout_width="match_parent"
-      android:layout_height="0dp"
-      android:layout_weight="1"
-      android:gravity="center"
-      android:textSize="80sp"/>
+    <TextView
+        android:id="@+id/bytes_received"
+        android:layout_width="match_parent"
+        android:layout_height="160dp"
+        android:gravity="center"
+        android:textSize="80sp" />
 
 
+    <Button
+        style="@style/Widget.AppCompat.Button.Colored"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:onClick="sendBytes"
+        android:text="@string/send_bytes" />
 
-  <Button
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:onClick="startAdvertising"
-      android:text="Start advertising"
-      style="@style/Widget.AppCompat.Button.Colored"/>
+    <Button
+        style="@style/Widget.AppCompat.Button.Colored"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:onClick="sendFile"
+        android:text="@string/send_file" />
 
-  <Button
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:onClick="startDiscovery"
-      android:text="Start discovery"
-      style="@style/Widget.AppCompat.Button.Colored"/>
+    <Button
+        style="@style/Widget.AppCompat.Button.Colored"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_marginTop="60dp"
+        android:onClick="startAdvertising"
+        android:text="@string/start_advertising" />
 
-  <Button
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:onClick="sendCommand"
-      android:text="Start Command"
-      style="@style/Widget.AppCompat.Button.Colored"/>
+    <Button
+        style="@style/Widget.AppCompat.Button.Colored"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:onClick="startDiscovery"
+        android:text="@string/start_discovery" />
 
-  <Button
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:onClick="disconnect"
-      android:text="@string/action_disconnect"
-      style="@style/Widget.AppCompat.Button.Colored"/>
+    <Button
+        style="@style/Widget.AppCompat.Button.Colored"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:onClick="disconnect"
+        android:text="@string/action_disconnect" />
 </LinearLayout>

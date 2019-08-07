@@ -43,7 +43,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
-    public static final int REQUEST_CONTENT_CODE = 20;
+    private static final int REQUEST_GET_CONTENT = 20;
 
     private static final String[] REQUIRED_PERMISSIONS =
             new String[]{
@@ -60,11 +60,11 @@ public class MainActivity extends AppCompatActivity {
     private static final String SERVICE_ID = "com.tab.demo.nearby";
     private static final String NICK_NAME = Build.DEVICE;
     private ConnectionsClient connectionsClient;
-    private String opponentEndpointId;
-    private String opponentName;
-    private TextView opponentNameText;
-    private TextView statusText;
-    private TextView commandText;
+    private String endpointId;
+    private String peerName;
+    private TextView txtRemoteName;
+    private TextView txtStatus;
+    private TextView txtBytes;
 
 
     /**
@@ -89,22 +89,21 @@ public class MainActivity extends AppCompatActivity {
                 new DiscoveryOptions.Builder().setStrategy(STRATEGY).build());
     }
 
-    public void sendCommand(View view) {
+    public void sendBytes(View view) {
         String command = "hello";
-        connectionsClient.sendPayload(
-                opponentEndpointId, Payload.fromBytes(command.getBytes(UTF_8)));
+        connectionsClient.sendPayload(endpointId, Payload.fromBytes(command.getBytes(UTF_8)));
 
     }
 
-    private void sendFile() {
+    public void sendFile(View view) {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("image/*");
-        startActivityForResult(intent, REQUEST_CONTENT_CODE);
+        startActivityForResult(intent, REQUEST_GET_CONTENT);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == REQUEST_CONTENT_CODE) {
+        if (requestCode == REQUEST_GET_CONTENT) {
             super.onActivityResult(requestCode, resultCode, data);
             Uri uri = data.getData();
             Payload filePayload;
@@ -113,21 +112,16 @@ public class MainActivity extends AppCompatActivity {
                 ParcelFileDescriptor pfd = getContentResolver().openFileDescriptor(uri, "r");
                 filePayload = Payload.fromFile(pfd);
             } catch (FileNotFoundException e) {
-                Log.e("MyApp", "File not found", e);
+                Log.e(TAG, "File not found", e);
                 return;
             }
-
             // Construct a simple message mapping the ID of the file payload to the desired filename.
             String filenameMessage = filePayload.getId() + ":" + uri.getLastPathSegment();
-
             // Send the filename message as a bytes payload.
-            Payload filenameBytesPayload =
-                    Payload.fromBytes(filenameMessage.getBytes(StandardCharsets.UTF_8));
-            connectionsClient.sendPayload(opponentEndpointId, filenameBytesPayload);
-
+            Payload filenameBytesPayload = Payload.fromBytes(filenameMessage.getBytes(StandardCharsets.UTF_8));
+            connectionsClient.sendPayload(endpointId, filenameBytesPayload);
             // Finally, send the file payload.
-            connectionsClient.sendPayload(opponentEndpointId, filePayload);
-
+            connectionsClient.sendPayload(endpointId, filePayload);
         }
     }
 
@@ -137,10 +131,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onPayloadReceived(String endpointId, Payload payload) {
                     String command = new String(payload.asBytes(), UTF_8);
-                    commandText.setText(command);
-                    if (command.equals("hello")) {
-                        sendFile();
-                    }
+                    txtBytes.setText(command);
                 }
 
 
@@ -172,16 +163,16 @@ public class MainActivity extends AppCompatActivity {
                 public void onConnectionInitiated(String endpointId, ConnectionInfo connectionInfo) {
                     Log.i(TAG, "onConnectionInitiated: accepting connection");
                     connectionsClient.acceptConnection(endpointId, payloadCallback);
-                    opponentName = connectionInfo.getEndpointName();
+                    peerName = connectionInfo.getEndpointName();
                 }
 
                 @Override
                 public void onConnectionResult(String endpointId, ConnectionResolution result) {
                     if (result.getStatus().isSuccess()) {
                         Log.i(TAG, "onConnectionResult: connection successful");
-                        opponentEndpointId = endpointId;
-                        opponentNameText.setText(opponentName);
-                        statusText.setText(getString(R.string.status_connected));
+                        MainActivity.this.endpointId = endpointId;
+                        txtRemoteName.setText(peerName);
+                        txtStatus.setText(getString(R.string.status_connected));
                     } else {
                         Log.i(TAG, "onConnectionResult: connection failed");
                     }
@@ -199,11 +190,11 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(bundle);
         setContentView(R.layout.activity_main);
 
-        TextView clientNameView = findViewById(R.id.client_name);
-        opponentNameText = findViewById(R.id.opponent_name);
-        statusText = findViewById(R.id.status);
-        commandText = findViewById(R.id.command);
-        clientNameView.setText(getString(R.string.clientname, NICK_NAME));
+        TextView txtLocalName = findViewById(R.id.local_nick_name);
+        txtRemoteName = findViewById(R.id.remote_nick_name);
+        txtStatus = findViewById(R.id.status);
+        txtBytes = findViewById(R.id.bytes_received);
+        txtLocalName.setText(getString(R.string.local_nick_name, NICK_NAME));
 
         connectionsClient = Nearby.getConnectionsClient(this);
 
@@ -264,15 +255,15 @@ public class MainActivity extends AppCompatActivity {
 
     public void disconnect(View view) {
         Log.i(TAG, "disconnect clicked");
-        if (opponentEndpointId != null)
-            connectionsClient.disconnectFromEndpoint(opponentEndpointId);
+        if (endpointId != null)
+            connectionsClient.disconnectFromEndpoint(endpointId);
         resetView();
     }
 
 
     private void resetView() {
-        opponentNameText.setText(getString(R.string.no_opponent));
-        statusText.setText(getString(R.string.status_disconnected));
+        txtRemoteName.setText(getString(R.string.no_peer_join));
+        txtStatus.setText(getString(R.string.status_disconnected));
     }
 
 }

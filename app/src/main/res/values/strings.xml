@@ -3,12 +3,16 @@
   <string name="app_name">Nearby transfer</string>
   <string name="error_missing_permissions">Cannot start without required permissions</string>
 
-  <string name="clientname">Your codename: %s</string>
-  <string name="no_opponent">none (yet)</string>
+  <string name="local_nick_name">Your nick name: %s</string>
+  <string name="no_peer_join">none (yet)</string>
 
   <string name="status_disconnected">Disconnected</string>
   <string name="status_connected">Connected</string>
 
   <string name="action_disconnect">Disconnect</string>
+  <string name="send_bytes">Send Bytes</string>
+  <string name="send_file">Send File</string>
+  <string name="start_advertising">Start advertising</string>
+  <string name="start_discovery">Start discovery</string>
 
 </resources>
