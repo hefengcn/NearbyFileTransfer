@@ -219,12 +219,16 @@ public class MainActivity extends AppCompatActivity {
                 // Get the received file (which will be in the Downloads folder)
                 File payloadFile = filePayload.asFile().asJavaFile();
 
-                String randomFileName = "/nearby_shared-" + System.currentTimeMillis() + ".jpg";
-                payloadFile.renameTo(new File(payloadFile.getParentFile(), randomFileName));
-                Log.d(TAG, "payloadFile =  " + payloadFile.toString());
+                String randomName = "nearby_shared-" + System.currentTimeMillis() + ".jpg";
+                File savedFileName = new File(payloadFile.getParentFile(), randomName);
+                boolean result = payloadFile.renameTo(savedFileName);
+                if(!result) Log.d(TAG, "renameTo failed  " );
 
-                if (payloadFile != null) {
-                    Uri uri = FileProvider.getUriForFile(MainActivity.this, "com.tab.demo.nearby", payloadFile);
+                Log.d(TAG, "payloadFile =  " + payloadFile.toString());
+                Log.d(TAG, "savedFileName =  " + savedFileName.toString());
+
+                if (savedFileName != null) {
+                    Uri uri = FileProvider.getUriForFile(MainActivity.this, "com.tab.demo.nearby", savedFileName);
                     Intent intent = new Intent(Intent.ACTION_VIEW);
                     intent.setDataAndType(uri, "image/*");
                     intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
