@@ -34,7 +34,6 @@ import com.google.android.gms.nearby.connection.EndpointDiscoveryCallback;
 import com.google.android.gms.nearby.connection.Payload;
 import com.google.android.gms.nearby.connection.PayloadCallback;
 import com.google.android.gms.nearby.connection.PayloadTransferUpdate;
-import com.google.android.gms.nearby.connection.PayloadTransferUpdate.Status;
 import com.google.android.gms.nearby.connection.Strategy;
 
 import java.io.File;
@@ -48,7 +47,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
-    private static final int REQUEST_GET_CONTENT = 20;
+    private static final int REQUEST_OPEN_DOCUMENT = 20;
 
     private static final String[] REQUIRED_PERMISSIONS =
             new String[]{
@@ -100,81 +99,42 @@ public class MainActivity extends AppCompatActivity {
     public void sendBytes(View view) {
         String str = String.valueOf(new Random().nextInt(100));
         connectionsClient.sendPayload(mEndpointId, Payload.fromBytes(str.getBytes(UTF_8)));
-
     }
 
-    private static final String ENDPOINT_ID_EXTRA = "com.foo.myapp.EndpointId";
+    private static final String ENDPOINT_ID_EXTRA = "com.tab.demo.nearby.EndpointId";
 
     public void sendFile(View view) {
-//        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-//        intent.setType("image/*");
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("image/*");
         intent.putExtra(ENDPOINT_ID_EXTRA, mEndpointId);
-        startActivityForResult(intent, REQUEST_GET_CONTENT);
+        startActivityForResult(intent, REQUEST_OPEN_DOCUMENT);
     }
 
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
-        if (requestCode == REQUEST_GET_CONTENT
+        if (requestCode == REQUEST_OPEN_DOCUMENT
                 && resultCode == Activity.RESULT_OK
                 && resultData != null) {
             String endpointId = resultData.getStringExtra(ENDPOINT_ID_EXTRA);
-
-            // The URI of the file selected by the user.
             Uri uri = resultData.getData();
             Log.d(TAG, "uri = " + uri);
             Payload filePayload;
             try {
-                // Open the ParcelFileDescriptor for this URI with read access.
                 ParcelFileDescriptor pfd = getContentResolver().openFileDescriptor(uri, "r");
                 filePayload = Payload.fromFile(pfd);
-                Log.d(TAG, "filePayload = " + filePayload.getId());
-
             } catch (FileNotFoundException e) {
-                Log.e("MyApp", "File not found", e);
+                Log.e(TAG, "File not found", e);
                 return;
             }
-
-            // Construct a simple message mapping the ID of the file payload to the desired filename.
-            String filenameMessage = filePayload.getId() + ":" + uri.getLastPathSegment();
-            Log.d(TAG, "filenameMessage = " + filenameMessage);
-            // Send the filename message as a bytes payload.
-            Payload filenameBytesPayload =
-                    Payload.fromBytes(filenameMessage.getBytes(StandardCharsets.UTF_8));
-            Log.d(TAG, "filenameBytesPayload.getId() = " + filenameBytesPayload.getId());
-            Log.d(TAG, "filenameBytesPayload.getType() = " + filenameBytesPayload.getType());
-            connectionsClient.sendPayload(mEndpointId, filenameBytesPayload);
-            Log.d(TAG, "filePayload = " + filePayload.getId());
-            Log.d(TAG, "filePayload.getType() = " + filePayload.getType());
-            // Finally, send the file payload.
             connectionsClient.sendPayload(mEndpointId, filePayload);
         }
     }
 
 
-    // Callbacks for receiving payloads
-   /* private final PayloadCallback payloadCallback =
-            new PayloadCallback() {
-                @Override
-                public void onPayloadReceived(String endpointId, Payload payload) {
-                    String command = new String(payload.asBytes(), UTF_8);
-                    txtBytes.setText(command);
-                }
-
-
-                @Override
-                public void onPayloadTransferUpdate(String endpointId, PayloadTransferUpdate update) {
-                    if (update.getStatus() == Status.SUCCESS) {
-                    }
-                }
-            };*/
-
     private final SimpleArrayMap<Long, Payload> incomingFilePayloads = new SimpleArrayMap<>();
     private final SimpleArrayMap<Long, Payload> completedFilePayloads = new SimpleArrayMap<>();
-    private final SimpleArrayMap<Long, String> filePayloadFilenames = new SimpleArrayMap<>();
 
     private final PayloadCallback payloadCallback = new PayloadCallback() {
 
@@ -182,58 +142,35 @@ public class MainActivity extends AppCompatActivity {
         public void onPayloadReceived(String endpointId, Payload payload) {
             Log.d(TAG, "onPayloadReceived, payload.getType() = " + payload.getType());
             if (payload.getType() == Payload.Type.BYTES) {
-                String payloadFilenameMessage = new String(payload.asBytes(), StandardCharsets.UTF_8);
-                Log.d(TAG, "payloadFilenameMessage = " + payloadFilenameMessage);
-                long payloadId = addPayloadFilename(payloadFilenameMessage);
-                processFilePayload(payloadId);
+                String msg = new String(payload.asBytes(), UTF_8);
+                txtBytes.setText(msg);
             } else if (payload.getType() == Payload.Type.FILE) {
                 // Add this to our tracking map, so that we can retrieve the payload later.
                 incomingFilePayloads.put(payload.getId(), payload);
             }
         }
 
-        /**
-         * Extracts the payloadId and filename from the message and stores it in the
-         * filePayloadFilenames map. The format is payloadId:filename.
-         */
-        private long addPayloadFilename(String payloadFilenameMessage) {
-            String[] parts = payloadFilenameMessage.split(":");
-            long payloadId = Long.parseLong(parts[0]);
-            String filename = parts[1];
-            filePayloadFilenames.put(payloadId, filename);
-            return payloadId;
-        }
-
         private void processFilePayload(long payloadId) {
-            // BYTES and FILE could be received in any order, so we call when either the BYTES or the FILE
-            // payload is completely received. The file payload is considered complete only when both have
-            // been received.
             Log.d(TAG, "processFilePayload ");
             Payload filePayload = completedFilePayloads.get(payloadId);
-            String filename = filePayloadFilenames.get(payloadId);
 
-            if (filePayload != null && filename != null) {
+            if (filePayload != null) {
                 completedFilePayloads.remove(payloadId);
-                filePayloadFilenames.remove(payloadId);
 
                 // Get the received file (which will be in the Downloads folder)
                 File payloadFile = filePayload.asFile().asJavaFile();
 
                 String randomName = "nearby_shared-" + System.currentTimeMillis() + ".jpg";
-                File savedFileName = new File(payloadFile.getParentFile(), randomName);
-                boolean result = payloadFile.renameTo(savedFileName);
-                if(!result) Log.d(TAG, "renameTo failed  " );
+                File targetFileName = new File(payloadFile.getParentFile(), randomName);
+                boolean result = payloadFile.renameTo(targetFileName);
+                if (!result) Log.d(TAG, "renameTo failed  ");
+                Log.d(TAG, "targetFileName =  " + targetFileName.toString());
 
-                Log.d(TAG, "payloadFile =  " + payloadFile.toString());
-                Log.d(TAG, "savedFileName =  " + savedFileName.toString());
-
-                if (savedFileName != null) {
-                    Uri uri = FileProvider.getUriForFile(MainActivity.this, "com.tab.demo.nearby", savedFileName);
-                    Intent intent = new Intent(Intent.ACTION_VIEW);
-                    intent.setDataAndType(uri, "image/*");
-                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                    MainActivity.this.startActivity(intent);
-                }
+                Uri uri = FileProvider.getUriForFile(MainActivity.this, "com.tab.demo.nearby", targetFileName);
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setDataAndType(uri, "image/*");
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                MainActivity.this.startActivity(intent);
             }
         }
 
