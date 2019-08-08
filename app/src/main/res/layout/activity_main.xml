@@ -47,28 +47,15 @@
         android:layout_width="match_parent"
         android:layout_height="60dp"
         android:layout_marginTop="20dp"
-        android:onClick="startAdvertising"
-        android:text="@string/start_advertising" />
+        android:onClick="onStartButtonClick"
+        android:text="@string/start_nearby" />
 
     <Button
         style="@style/Widget.AppCompat.Button.Colored"
         android:layout_width="match_parent"
         android:layout_height="60dp"
-        android:onClick="startDiscovery"
-        android:text="@string/start_discovery" />
+        android:onClick="onStopButtonClick"
+        android:text="@string/stop_nearby" />
 
-    <Button
-        style="@style/Widget.AppCompat.Button.Colored"
-        android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:layout_marginTop="20dp"
-        android:onClick="connect"
-        android:text="@string/action_connect" />
 
-    <Button
-        style="@style/Widget.AppCompat.Button.Colored"
-        android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:onClick="disconnect"
-        android:text="@string/action_disconnect" />
 </LinearLayout>
