@@ -128,7 +128,7 @@ public class NearbyService extends Service {
                         Log.i(TAG, "onConnectionResult: connection successful");
                         Log.i(TAG, "onConnectionResult: endpointId =" + endpointId);
                         remoteEndpointId = endpointId;
-                        reportConnectStatus(remoteEndpointName,"Connected");
+                        reportConnectStatus(remoteEndpointName, "Connected");
                     } else {
                         Log.i(TAG, "onConnectionResult: connection failed");
                     }
@@ -137,7 +137,7 @@ public class NearbyService extends Service {
                 @Override
                 public void onDisconnected(String endpointId) {
                     Log.i(TAG, "onDisconnected: endpointId =" + endpointId);
-                    reportConnectStatus(remoteEndpointName,"Disconnected");
+                    reportConnectStatus(remoteEndpointName, "Disconnected");
                 }
             };
 
