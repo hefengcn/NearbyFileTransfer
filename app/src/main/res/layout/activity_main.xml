@@ -48,7 +48,7 @@
         android:layout_height="60dp"
         android:layout_marginTop="20dp"
         android:onClick="onStartButtonClick"
-        android:text="@string/start_nearby" />
+        android:text="@string/start_discovery" />
 
     <Button
         style="@style/Widget.AppCompat.Button.Colored"

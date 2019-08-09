@@ -44,8 +44,6 @@ public class NearbyService extends Service {
     public static final String BROADCAST_ACTION = "com.tab.demo.nearby.reports";
     public static final String EXTRA_NAME = "extra_name";
     public static final String EXTRA_STATUS = "extra_status";
-    public static final int CONNECTED = 1;
-    public static final int DISCONNECTED = 2;
 
     private String remoteEndpointId;
     private String remoteEndpointName;
@@ -61,7 +59,8 @@ public class NearbyService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        searchEndpoint();
+        //searchEndpoint();
+        startAdvertising();
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -88,7 +87,7 @@ public class NearbyService extends Service {
                 new AdvertisingOptions.Builder().setStrategy(STRATEGY).build());
     }
 
-    private void startDiscovery() {
+    public void startDiscovery() {
         Log.d(TAG, "startDiscovery()");
         connectionsClient.startDiscovery(
                 SERVICE_ID, endpointDiscoveryCallback,
@@ -246,9 +245,17 @@ public class NearbyService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        connectionsClient.stopAdvertising();
-        connectionsClient.stopDiscovery();
+        stopAdvertising();
+        stopDiscovery();
         connectionsClient.stopAllEndpoints();
+    }
+
+    public void stopDiscovery() {
+        connectionsClient.stopDiscovery();
+    }
+
+    public void stopAdvertising() {
+        connectionsClient.stopAdvertising();
     }
 
 

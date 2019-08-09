@@ -76,8 +76,6 @@ public class MainActivity extends AppCompatActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(new Intent(MainActivity.this, NearbyService.class));
         }
-
-
     }
 
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
@@ -87,7 +85,6 @@ public class MainActivity extends AppCompatActivity {
             String status = intent.getStringExtra(EXTRA_STATUS);
             tvRemoteEndpointName.setText("Remote endpoint name: " + name);
             tvConnectStatus.setText("Connection status: " + status);
-
         }
     };
 
@@ -150,6 +147,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
+        mService.startDiscovery();
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mReceiver);
         if (mBound) unbindService(connection);
         mBound = false;
@@ -203,16 +201,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onStartButtonClick(View view) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(new Intent(MainActivity.this, NearbyService.class));
-        }
+        mService.stopAdvertising();
+        mService.startDiscovery();
     }
 
     public void onStopButtonClick(View view) {
-        if (mBound) unbindService(connection);
-        Intent intent = new Intent(this, NearbyService.class);
-        stopService(intent);
+
     }
-
-
 }
