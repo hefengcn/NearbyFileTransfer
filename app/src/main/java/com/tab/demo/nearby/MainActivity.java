@@ -97,6 +97,12 @@ public class MainActivity extends AppCompatActivity {
         LocalBroadcastManager.getInstance(this).registerReceiver(mReceiver, intentFilter);
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+    }
+
     private ServiceConnection connection = new ServiceConnection() {
 
         @Override
@@ -105,6 +111,7 @@ public class MainActivity extends AppCompatActivity {
             NearbyService.LocalBinder binder = (NearbyService.LocalBinder) service;
             mService = binder.getService();
             mBound = true;
+            mService.reportConnectStatus();
         }
 
         @Override
@@ -206,6 +213,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onStopButtonClick(View view) {
-
+        mService.onDestroy();
+        System.exit(0);
     }
 }

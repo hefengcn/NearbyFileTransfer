@@ -55,7 +55,7 @@
         android:layout_width="match_parent"
         android:layout_height="60dp"
         android:onClick="onStopButtonClick"
-        android:text="@string/stop_nearby" />
+        android:text="@string/exit_app" />
 
 
 </LinearLayout>

@@ -47,6 +47,7 @@ public class NearbyService extends Service {
 
     private String remoteEndpointId;
     private String remoteEndpointName;
+    private String remoteEndpointStatus = "unknown";
     private final IBinder binder = new LocalBinder();
     ConnectionsClient connectionsClient;
 
@@ -102,11 +103,16 @@ public class NearbyService extends Service {
                     Log.i(TAG, "onEndpointFound: info.getEndpointName() =" + info.getEndpointName());
                     connectionsClient.stopDiscovery();
                     connectionsClient.requestConnection(LOCAL_ENDPOINT_NAME, endpointId, connectionLifecycleCallback);
+                    remoteEndpointName = info.getEndpointName();
+                    remoteEndpointStatus = "found";
+                    reportConnectStatus();
                 }
 
                 @Override
                 public void onEndpointLost(String endpointId) {
                     Log.i(TAG, "onEndpointLost: endpointId =" + endpointId);
+                    remoteEndpointStatus = "lost";
+                    reportConnectStatus();
                 }
             };
 
@@ -120,6 +126,8 @@ public class NearbyService extends Service {
                     Log.i(TAG, " acceptConnection");
                     connectionsClient.acceptConnection(endpointId, payloadCallback);
                     remoteEndpointName = connectionInfo.getEndpointName();
+                    remoteEndpointStatus = "ConnectionInitiated";
+                    reportConnectStatus();
                 }
 
                 @Override
@@ -128,7 +136,8 @@ public class NearbyService extends Service {
                         Log.i(TAG, "onConnectionResult: connection successful");
                         Log.i(TAG, "onConnectionResult: endpointId =" + endpointId);
                         remoteEndpointId = endpointId;
-                        reportConnectStatus(remoteEndpointName, "Connected");
+                        remoteEndpointStatus = "Connected";
+                        reportConnectStatus();
                     } else {
                         Log.i(TAG, "onConnectionResult: connection failed");
                     }
@@ -137,14 +146,16 @@ public class NearbyService extends Service {
                 @Override
                 public void onDisconnected(String endpointId) {
                     Log.i(TAG, "onDisconnected: endpointId =" + endpointId);
-                    reportConnectStatus(remoteEndpointName, "Disconnected");
+                    remoteEndpointStatus = "Disconnected";
+                    reportConnectStatus();
                 }
             };
 
-    public void reportConnectStatus(String name, String status) {
+
+    public void reportConnectStatus() {
         Intent localIntent = new Intent(BROADCAST_ACTION)
-                .putExtra(EXTRA_NAME, name)
-                .putExtra(EXTRA_STATUS, status);
+                .putExtra(EXTRA_NAME, remoteEndpointName)
+                .putExtra(EXTRA_STATUS, remoteEndpointStatus);
         LocalBroadcastManager.getInstance(NearbyService.this).sendBroadcast(localIntent);
     }
 
