@@ -4,7 +4,6 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Binder;
@@ -21,6 +20,7 @@ import com.google.android.gms.nearby.connection.AdvertisingOptions;
 import com.google.android.gms.nearby.connection.ConnectionInfo;
 import com.google.android.gms.nearby.connection.ConnectionLifecycleCallback;
 import com.google.android.gms.nearby.connection.ConnectionResolution;
+import com.google.android.gms.nearby.connection.ConnectionsClient;
 import com.google.android.gms.nearby.connection.DiscoveredEndpointInfo;
 import com.google.android.gms.nearby.connection.DiscoveryOptions;
 import com.google.android.gms.nearby.connection.EndpointDiscoveryCallback;
@@ -35,24 +35,27 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class NearbyService extends Service {
     private static final String TAG = "NearbyService";
-    private static final Strategy STRATEGY = Strategy.P2P_STAR;
+    private static final Strategy STRATEGY = Strategy.P2P_CLUSTER;
     private static final String SERVICE_ID = "com.tab.demo.nearby";
-    private static final String ENDPOINT_NAME = Build.DEVICE;
-    private static final int ONGOING_NOTIFICATION_ID = 20;
-    private String mEndpointId;
-    private String mEndpointName;
-    private Context mContext;
-    private final IBinder binder = new LocalBinder();
+    private static final String LOCAL_ENDPOINT_NAME = Build.DEVICE;
     private static final String CHANNEL_ID = "channel";
     private static final int NOTIFICATION_ID = 101;
+    private String remoteEndpointId;
+    private String remoteEndpointName;
+    private final IBinder binder = new LocalBinder();
+    ConnectionsClient connectionsClient;
 
-    public NearbyService() {
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        connectionsClient = Nearby.getConnectionsClient(this);
+        startForeground(NOTIFICATION_ID, getNotification());
     }
 
-    public class LocalBinder extends Binder {
-        NearbyService getService() {
-            return NearbyService.this;
-        }
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        searchEndpoint();
+        return super.onStartCommand(intent, flags, startId);
     }
 
     @Override
@@ -60,32 +63,9 @@ public class NearbyService extends Service {
         return binder;
     }
 
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        mContext = this;
-        searchEndpoint();
-        createNotificationChannel();
-        startForeground(NOTIFICATION_ID, getNotification());
-
-    }
-
-    public Notification getNotification() {
-        return new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("Nearby Service")
-                .setContentText("Wi-Fi Direct")
-                .setSmallIcon(R.drawable.icon)
-                .build();
-    }
-
-    private void createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel serviceChannel = new NotificationChannel(
-                    CHANNEL_ID, "Foreground Service Channel",
-                    NotificationManager.IMPORTANCE_DEFAULT
-            );
-            NotificationManager manager = getSystemService(NotificationManager.class);
-            manager.createNotificationChannel(serviceChannel);
+    class LocalBinder extends Binder {
+        NearbyService getService() {
+            return NearbyService.this;
         }
     }
 
@@ -94,51 +74,53 @@ public class NearbyService extends Service {
         startDiscovery();
     }
 
-    public void startAdvertising() {
+    private void startAdvertising() {
         Log.d(TAG, "startAdvertising()");
-        // Note: Advertising may fail. To keep this demo simple, we don't handle failures.
-        Nearby.getConnectionsClient(mContext).startAdvertising(
-                ENDPOINT_NAME, SERVICE_ID, connectionLifecycleCallback,
+        connectionsClient.startAdvertising(
+                LOCAL_ENDPOINT_NAME, SERVICE_ID, connectionLifecycleCallback,
                 new AdvertisingOptions.Builder().setStrategy(STRATEGY).build());
     }
 
-    public void startDiscovery() {
+    private void startDiscovery() {
         Log.d(TAG, "startDiscovery()");
-        // Note: Discovery may fail. To keep this demo simple, we don't handle failures.
-        Nearby.getConnectionsClient(mContext).startDiscovery(
+        connectionsClient.startDiscovery(
                 SERVICE_ID, endpointDiscoveryCallback,
                 new DiscoveryOptions.Builder().setStrategy(STRATEGY).build());
     }
 
-    // Callbacks for finding other devices
     private final EndpointDiscoveryCallback endpointDiscoveryCallback =
             new EndpointDiscoveryCallback() {
                 @Override
                 public void onEndpointFound(String endpointId, DiscoveredEndpointInfo info) {
-                    Log.i(TAG, "onEndpointFound: endpoint found");
-                    Nearby.getConnectionsClient(mContext).requestConnection(ENDPOINT_NAME, endpointId, connectionLifecycleCallback);
+                    Log.i(TAG, "onEndpointFound: endpointId =" + endpointId);
+                    Log.i(TAG, "onEndpointFound: info.getEndpointName() =" + info.getEndpointName());
+                    connectionsClient.requestConnection(LOCAL_ENDPOINT_NAME, endpointId, connectionLifecycleCallback);
                 }
 
                 @Override
                 public void onEndpointLost(String endpointId) {
+                    Log.i(TAG, "onEndpointLost: endpointId =" + endpointId);
                 }
             };
 
-    // Callbacks for connections to other devices
     private final ConnectionLifecycleCallback connectionLifecycleCallback =
             new ConnectionLifecycleCallback() {
                 @Override
                 public void onConnectionInitiated(String endpointId, ConnectionInfo connectionInfo) {
-                    Log.i(TAG, "onConnectionInitiated: accepting connection");
-                    Nearby.getConnectionsClient(mContext).acceptConnection(endpointId, payloadCallback);
-                    mEndpointName = connectionInfo.getEndpointName();
+                    Log.i(TAG, "onConnectionInitiated: endpointId =" + endpointId);
+                    Log.i(TAG, "onConnectionInitiated: connectionInfo.getEndpointName() =" + connectionInfo.getEndpointName());
+                    Log.i(TAG, "onConnectionInitiated:connectionInfo.isIncomingConnection() =" + connectionInfo.isIncomingConnection());
+                    Log.i(TAG, " acceptConnection");
+                    connectionsClient.acceptConnection(endpointId, payloadCallback);
+                    remoteEndpointName = connectionInfo.getEndpointName();
                 }
 
                 @Override
                 public void onConnectionResult(String endpointId, ConnectionResolution result) {
                     if (result.getStatus().isSuccess()) {
                         Log.i(TAG, "onConnectionResult: connection successful");
-                        mEndpointId = endpointId;
+                        Log.i(TAG, "onConnectionResult: endpointId =" + endpointId);
+                        remoteEndpointId = endpointId;
                         //txtRemoteName.setText(peerName);
                         //txtStatus.setText(getString(R.string.status_connected));
                     } else {
@@ -148,25 +130,25 @@ public class NearbyService extends Service {
 
                 @Override
                 public void onDisconnected(String endpointId) {
-                    Log.i(TAG, "onDisconnected: disconnected from the opponent");
+                    Log.i(TAG, "onDisconnected: endpointId =" + endpointId);
                     //txtStatus.setText(getString(R.string.status_disconnected));
                 }
             };
 
     public void sendStringPayload(String str) {
-        Nearby.getConnectionsClient(mContext).sendPayload(mEndpointId, Payload.fromBytes(str.getBytes(UTF_8)));
+        connectionsClient.sendPayload(remoteEndpointId, Payload.fromBytes(str.getBytes(UTF_8)));
     }
 
     public void sendFilePayload(Payload filePayload) {
-        Nearby.getConnectionsClient(mContext).sendPayload(mEndpointId, filePayload);
+        connectionsClient.sendPayload(remoteEndpointId, filePayload);
     }
 
     public void disconnect() {
-        Nearby.getConnectionsClient(mContext).disconnectFromEndpoint(mEndpointId);
+        connectionsClient.disconnectFromEndpoint(remoteEndpointId);
     }
 
     public void connect() {
-        Nearby.getConnectionsClient(mContext).requestConnection(ENDPOINT_NAME, mEndpointId, connectionLifecycleCallback);
+        connectionsClient.requestConnection(LOCAL_ENDPOINT_NAME, remoteEndpointId, connectionLifecycleCallback);
     }
 
     private final SimpleArrayMap<Long, Payload> incomingFilePayloads = new SimpleArrayMap<>();
@@ -222,22 +204,36 @@ public class NearbyService extends Service {
     }
 
     private void showFile(File targetFileName) {
-        Uri uri = FileProvider.getUriForFile(mContext, "com.tab.demo.nearby", targetFileName);
+        Uri uri = FileProvider.getUriForFile(this, "com.tab.demo.nearby", targetFileName);
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setDataAndType(uri, "image/*");
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        mContext.startActivity(intent);
+        this.startActivity(intent);
     }
 
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        return super.onStartCommand(intent, flags, startId);
+
+    private Notification getNotification() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel serviceChannel = new NotificationChannel(
+                    CHANNEL_ID, "Foreground Service Channel",
+                    NotificationManager.IMPORTANCE_DEFAULT
+            );
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            manager.createNotificationChannel(serviceChannel);
+        }
+        return new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("Nearby Service")
+                .setContentText("Wi-Fi Direct")
+                .setSmallIcon(R.drawable.icon)
+                .build();
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        Nearby.getConnectionsClient(mContext).stopAllEndpoints();
+        connectionsClient.stopAdvertising();
+        connectionsClient.stopDiscovery();
+        connectionsClient.stopAllEndpoints();
     }
 
 

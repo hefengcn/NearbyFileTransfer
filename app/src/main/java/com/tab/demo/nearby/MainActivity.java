@@ -63,6 +63,9 @@ public class MainActivity extends AppCompatActivity {
         txtStatus = findViewById(R.id.status);
         txtBytes = findViewById(R.id.bytes_received);
         txtLocalName.setText(getString(R.string.local_nick_name, NICK_NAME));
+        if (!hasPermissions(this, REQUIRED_PERMISSIONS)) {
+            requestPermissions(REQUIRED_PERMISSIONS, REQUEST_CODE_REQUIRED_PERMISSIONS);
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(new Intent(MainActivity.this, NearbyService.class));
         }
@@ -72,10 +75,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-
-        if (!hasPermissions(this, REQUIRED_PERMISSIONS)) {
-            requestPermissions(REQUIRED_PERMISSIONS, REQUEST_CODE_REQUIRED_PERMISSIONS);
-        }
         Intent intent = new Intent(this, NearbyService.class);
         bindService(intent, connection, Context.BIND_AUTO_CREATE);
     }
@@ -147,9 +146,6 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-    /**
-     * Handles user acceptance (or denial) of our permission request.
-     */
     @Override
     public void onRequestPermissionsResult(
             int requestCode, String[] permissions, int[] grantResults) {
