@@ -3,19 +3,13 @@
   <string name="app_name">Nearby transfer</string>
   <string name="error_missing_permissions">Cannot start without required permissions</string>
 
-  <string name="local_nick_name">Your nick name: %s</string>
-  <string name="no_peer_join">none (yet)</string>
+  <string name="local_endpoint_name">Local endpoint name: %s</string>
+  <string name="no_remote_endpoint_join">no remote endpoint join yet</string>
 
   <string name="status_disconnected">Disconnected</string>
-  <string name="status_connected">Connected</string>
 
-  <string name="action_disconnect">Disconnect</string>
   <string name="send_bytes">Send Bytes</string>
   <string name="send_file">Send File</string>
-  <string name="action_connect">CONNECT</string>
-  <string name="notification_message">notification</string>
-  <string name="notification_title">nearby service</string>
-  <string name="ticker_text">ticker text</string>
   <string name="start_nearby">START</string>
   <string name="stop_nearby">STOP</string>
 

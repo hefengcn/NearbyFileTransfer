@@ -6,17 +6,17 @@
     android:orientation="vertical">
 
     <TextView
-        android:id="@+id/local_nick_name"
+        android:id="@+id/local_endpoint_name"
         style="@style/StatusText"
         android:layout_height="60dp" />
 
     <TextView
-        android:id="@+id/remote_nick_name"
+        android:id="@+id/remote_endpoint_name"
         style="@style/StatusText"
         android:layout_height="60dp" />
 
     <TextView
-        android:id="@+id/status"
+        android:id="@+id/connect_status"
         style="@style/StatusText"
         android:layout_height="60dp" />
 

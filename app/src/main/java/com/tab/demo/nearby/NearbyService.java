@@ -14,6 +14,7 @@ import android.util.Log;
 import androidx.collection.SimpleArrayMap;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.FileProvider;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.google.android.gms.nearby.Nearby;
 import com.google.android.gms.nearby.connection.AdvertisingOptions;
@@ -40,6 +41,12 @@ public class NearbyService extends Service {
     private static final String LOCAL_ENDPOINT_NAME = Build.DEVICE;
     private static final String CHANNEL_ID = "channel";
     private static final int NOTIFICATION_ID = 101;
+    public static final String BROADCAST_ACTION = "com.tab.demo.nearby.reports";
+    public static final String EXTRA_NAME = "extra_name";
+    public static final String EXTRA_STATUS = "extra_status";
+    public static final int CONNECTED = 1;
+    public static final int DISCONNECTED = 2;
+
     private String remoteEndpointId;
     private String remoteEndpointName;
     private final IBinder binder = new LocalBinder();
@@ -122,8 +129,7 @@ public class NearbyService extends Service {
                         Log.i(TAG, "onConnectionResult: connection successful");
                         Log.i(TAG, "onConnectionResult: endpointId =" + endpointId);
                         remoteEndpointId = endpointId;
-                        //txtRemoteName.setText(peerName);
-                        //txtStatus.setText(getString(R.string.status_connected));
+                        reportConnectStatus(remoteEndpointName,"Connected");
                     } else {
                         Log.i(TAG, "onConnectionResult: connection failed");
                     }
@@ -132,9 +138,16 @@ public class NearbyService extends Service {
                 @Override
                 public void onDisconnected(String endpointId) {
                     Log.i(TAG, "onDisconnected: endpointId =" + endpointId);
-                    //txtStatus.setText(getString(R.string.status_disconnected));
+                    reportConnectStatus(remoteEndpointName,"Disconnected");
                 }
             };
+
+    public void reportConnectStatus(String name, String status) {
+        Intent localIntent = new Intent(BROADCAST_ACTION)
+                .putExtra(EXTRA_NAME, name)
+                .putExtra(EXTRA_STATUS, status);
+        LocalBroadcastManager.getInstance(NearbyService.this).sendBroadcast(localIntent);
+    }
 
     public void sendStringPayload(String str) {
         connectionsClient.sendPayload(remoteEndpointId, Payload.fromBytes(str.getBytes(UTF_8)));
