@@ -35,7 +35,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class NearbyService extends Service {
     private static final String TAG = "NearbyService";
-    private static final Strategy STRATEGY = Strategy.P2P_CLUSTER;
+    private static final Strategy STRATEGY = Strategy.P2P_POINT_TO_POINT;
     private static final String SERVICE_ID = "com.tab.demo.nearby";
     private static final String LOCAL_ENDPOINT_NAME = Build.DEVICE;
     private static final String CHANNEL_ID = "channel";
@@ -94,6 +94,7 @@ public class NearbyService extends Service {
                 public void onEndpointFound(String endpointId, DiscoveredEndpointInfo info) {
                     Log.i(TAG, "onEndpointFound: endpointId =" + endpointId);
                     Log.i(TAG, "onEndpointFound: info.getEndpointName() =" + info.getEndpointName());
+                    connectionsClient.stopDiscovery();
                     connectionsClient.requestConnection(LOCAL_ENDPOINT_NAME, endpointId, connectionLifecycleCallback);
                 }
 
@@ -208,6 +209,7 @@ public class NearbyService extends Service {
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setDataAndType(uri, "image/*");
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         this.startActivity(intent);
     }
 
