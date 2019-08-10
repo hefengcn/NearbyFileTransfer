@@ -43,21 +43,18 @@ public class NearbyService extends Service {
     private static final int NOTIFICATION_ID = 101;
     public static final String BROADCAST_ACTION = "com.tab.demo.nearby.reports";
     private final IBinder binder = new LocalBinder();
-    ConnectionsClient connectionsClient;
-
-    private final SimpleArrayMap<String, EndpointStatus> endpionts = new SimpleArrayMap<>();
+    private ConnectionsClient connectionsClient;
+    private final SimpleArrayMap<String, EndpointStatus> endpoints = new SimpleArrayMap<>();
 
     @Override
     public void onCreate() {
         super.onCreate();
         connectionsClient = Nearby.getConnectionsClient(this);
         startForeground(NOTIFICATION_ID, getNotification());
-
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        //searchEndpoint();
         startAdvertising();
         return super.onStartCommand(intent, flags, startId);
     }
@@ -68,18 +65,13 @@ public class NearbyService extends Service {
     }
 
     public SimpleArrayMap<String, EndpointStatus> getStatus() {
-        return endpionts;
+        return endpoints;
     }
 
     class LocalBinder extends Binder {
         NearbyService getService() {
             return NearbyService.this;
         }
-    }
-
-    private void searchEndpoint() {
-        startAdvertising();
-        startDiscovery();
     }
 
     private void startAdvertising() {
@@ -107,14 +99,14 @@ public class NearbyService extends Service {
                     EndpointStatus status = new EndpointStatus();
                     status.setName(info.getEndpointName());
                     status.setStatus("found");
-                    endpionts.put(endpointId, status);
+                    endpoints.put(endpointId, status);
                     reportConnectStatus();
                 }
 
                 @Override
                 public void onEndpointLost(String endpointId) {
                     Log.i(TAG, "onEndpointLost: endpointId =" + endpointId);
-                    endpionts.remove(endpointId);
+                    endpoints.remove(endpointId);
                     reportConnectStatus();
                 }
             };
@@ -131,7 +123,7 @@ public class NearbyService extends Service {
                     EndpointStatus status = new EndpointStatus();
                     status.setName(connectionInfo.getEndpointName());
                     status.setStatus("ConnectionInitiated");
-                    endpionts.put(endpointId, status);
+                    endpoints.put(endpointId, status);
                     reportConnectStatus();
                 }
 
@@ -140,11 +132,11 @@ public class NearbyService extends Service {
                     if (result.getStatus().isSuccess()) {
                         Log.i(TAG, "onConnectionResult: connection successful");
                         Log.i(TAG, "onConnectionResult: endpointId =" + endpointId);
-                        endpionts.get(endpointId).setStatus("Connected");
+                        endpoints.get(endpointId).setStatus("Connected");
                         reportConnectStatus();
                     } else {
                         Log.i(TAG, "onConnectionResult: connection failed");
-                        endpionts.get(endpointId).setStatus("connection failed");
+                        endpoints.get(endpointId).setStatus("connection failed");
                         reportConnectStatus();
                     }
                 }
@@ -152,7 +144,7 @@ public class NearbyService extends Service {
                 @Override
                 public void onDisconnected(String endpointId) {
                     Log.i(TAG, "onDisconnected: endpointId =" + endpointId);
-                    endpionts.get(endpointId).setStatus("Disconnected");
+                    endpoints.get(endpointId).setStatus("Disconnected");
                     reportConnectStatus();
                 }
             };
@@ -164,19 +156,19 @@ public class NearbyService extends Service {
     }
 
     public void sendStringPayload(String str) {
-        connectionsClient.sendPayload(endpionts.keyAt(0), Payload.fromBytes(str.getBytes(UTF_8)));
+        connectionsClient.sendPayload(endpoints.keyAt(0), Payload.fromBytes(str.getBytes(UTF_8)));
     }
 
     public void sendFilePayload(Payload filePayload) {
-        connectionsClient.sendPayload(endpionts.keyAt(0), filePayload);
+        connectionsClient.sendPayload(endpoints.keyAt(0), filePayload);
     }
 
     public void disconnect() {
-        connectionsClient.disconnectFromEndpoint(endpionts.keyAt(0));
+        connectionsClient.disconnectFromEndpoint(endpoints.keyAt(0));
     }
 
     public void connect() {
-        connectionsClient.requestConnection(LOCAL_ENDPOINT_NAME, endpionts.keyAt(0), connectionLifecycleCallback);
+        connectionsClient.requestConnection(LOCAL_ENDPOINT_NAME, endpoints.keyAt(0), connectionLifecycleCallback);
     }
 
     private final SimpleArrayMap<Long, Payload> incomingFilePayloads = new SimpleArrayMap<>();
@@ -187,7 +179,6 @@ public class NearbyService extends Service {
             Log.d(TAG, "onPayloadReceived, payload.getType() = " + payload.getType());
             if (payload.getType() == Payload.Type.BYTES) {
                 String str = new String(payload.asBytes(), UTF_8);
-                //txtBytes.setText(msg);
             } else if (payload.getType() == Payload.Type.FILE) {
                 incomingFilePayloads.put(payload.getId(), payload);
             }
@@ -209,7 +200,6 @@ public class NearbyService extends Service {
             }
         }
     };
-
 
     private void processFilePayload(long payloadId) {
         Log.d(TAG, "processFilePayload ");
@@ -240,7 +230,6 @@ public class NearbyService extends Service {
         this.startActivity(intent);
     }
 
-
     private Notification getNotification() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel serviceChannel = new NotificationChannel(
@@ -257,14 +246,6 @@ public class NearbyService extends Service {
                 .build();
     }
 
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        stopAdvertising();
-        stopDiscovery();
-        connectionsClient.stopAllEndpoints();
-    }
-
     public void stopDiscovery() {
         connectionsClient.stopDiscovery();
     }
@@ -273,5 +254,12 @@ public class NearbyService extends Service {
         connectionsClient.stopAdvertising();
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        stopAdvertising();
+        stopDiscovery();
+        connectionsClient.stopAllEndpoints();
+    }
 
 }
