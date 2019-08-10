@@ -20,6 +20,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.collection.SimpleArrayMap;
 import androidx.core.content.ContextCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
@@ -29,8 +30,6 @@ import java.io.FileNotFoundException;
 import java.util.Random;
 
 import static com.tab.demo.nearby.NearbyService.BROADCAST_ACTION;
-import static com.tab.demo.nearby.NearbyService.EXTRA_NAME;
-import static com.tab.demo.nearby.NearbyService.EXTRA_STATUS;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -52,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int REQUEST_CODE_REQUIRED_PERMISSIONS = 1;
     private static final String LOCAL_ENDPOINT_NAME = Build.DEVICE;
+    private TextView tvRemoteEndpointID;
     private TextView tvRemoteEndpointName;
     private TextView tvConnectStatus;
     private TextView tvBytesReceived;
@@ -67,6 +67,7 @@ public class MainActivity extends AppCompatActivity {
 
         TextView tvLocalEndpointName = findViewById(R.id.local_endpoint_name);
         tvLocalEndpointName.setText(getString(R.string.local_endpoint_name, LOCAL_ENDPOINT_NAME));
+        tvRemoteEndpointID = findViewById(R.id.remote_endpoint_id);
         tvRemoteEndpointName = findViewById(R.id.remote_endpoint_name);
         tvConnectStatus = findViewById(R.id.connect_status);
         tvBytesReceived = findViewById(R.id.bytes_received);
@@ -81,10 +82,12 @@ public class MainActivity extends AppCompatActivity {
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            String name = intent.getStringExtra(EXTRA_NAME);
-            String status = intent.getStringExtra(EXTRA_STATUS);
-            tvRemoteEndpointName.setText("Remote endpoint name: " + name);
-            tvConnectStatus.setText("Connection status: " + status);
+            SimpleArrayMap<String, EndpointStatus> endpoints = mService.getStatus();
+            if (!endpoints.isEmpty()) {
+                tvRemoteEndpointID.setText("Remote endpoint id:" + endpoints.keyAt(0));
+                tvRemoteEndpointName.setText("Remote endpoint name: " + endpoints.valueAt(0).getName());
+                tvConnectStatus.setText("Connection status: " + endpoints.valueAt(0).getStatus());
+            }
         }
     };
 
@@ -154,8 +157,13 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
-        mService.startDiscovery();
+        mService.stopDiscovery();
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mReceiver);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
         if (mBound) unbindService(connection);
         mBound = false;
     }

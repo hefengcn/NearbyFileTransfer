@@ -42,20 +42,17 @@ public class NearbyService extends Service {
     private static final String CHANNEL_ID = "channel";
     private static final int NOTIFICATION_ID = 101;
     public static final String BROADCAST_ACTION = "com.tab.demo.nearby.reports";
-    public static final String EXTRA_NAME = "extra_name";
-    public static final String EXTRA_STATUS = "extra_status";
-
-    private String remoteEndpointId;
-    private String remoteEndpointName;
-    private String remoteEndpointStatus = "unknown";
     private final IBinder binder = new LocalBinder();
     ConnectionsClient connectionsClient;
+
+    private final SimpleArrayMap<String, EndpointStatus> endpionts = new SimpleArrayMap<>();
 
     @Override
     public void onCreate() {
         super.onCreate();
         connectionsClient = Nearby.getConnectionsClient(this);
         startForeground(NOTIFICATION_ID, getNotification());
+
     }
 
     @Override
@@ -68,6 +65,10 @@ public class NearbyService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         return binder;
+    }
+
+    public SimpleArrayMap<String, EndpointStatus> getStatus() {
+        return endpionts;
     }
 
     class LocalBinder extends Binder {
@@ -103,15 +104,17 @@ public class NearbyService extends Service {
                     Log.i(TAG, "onEndpointFound: info.getEndpointName() =" + info.getEndpointName());
                     connectionsClient.stopDiscovery();
                     connectionsClient.requestConnection(LOCAL_ENDPOINT_NAME, endpointId, connectionLifecycleCallback);
-                    remoteEndpointName = info.getEndpointName();
-                    remoteEndpointStatus = "found";
+                    EndpointStatus status = new EndpointStatus();
+                    status.setName(info.getEndpointName());
+                    status.setStatus("found");
+                    endpionts.put(endpointId, status);
                     reportConnectStatus();
                 }
 
                 @Override
                 public void onEndpointLost(String endpointId) {
                     Log.i(TAG, "onEndpointLost: endpointId =" + endpointId);
-                    remoteEndpointStatus = "lost";
+                    endpionts.remove(endpointId);
                     reportConnectStatus();
                 }
             };
@@ -125,8 +128,10 @@ public class NearbyService extends Service {
                     Log.i(TAG, "onConnectionInitiated:connectionInfo.isIncomingConnection() =" + connectionInfo.isIncomingConnection());
                     Log.i(TAG, " acceptConnection");
                     connectionsClient.acceptConnection(endpointId, payloadCallback);
-                    remoteEndpointName = connectionInfo.getEndpointName();
-                    remoteEndpointStatus = "ConnectionInitiated";
+                    EndpointStatus status = new EndpointStatus();
+                    status.setName(connectionInfo.getEndpointName());
+                    status.setStatus("ConnectionInitiated");
+                    endpionts.put(endpointId, status);
                     reportConnectStatus();
                 }
 
@@ -135,44 +140,43 @@ public class NearbyService extends Service {
                     if (result.getStatus().isSuccess()) {
                         Log.i(TAG, "onConnectionResult: connection successful");
                         Log.i(TAG, "onConnectionResult: endpointId =" + endpointId);
-                        remoteEndpointId = endpointId;
-                        remoteEndpointStatus = "Connected";
+                        endpionts.get(endpointId).setStatus("Connected");
                         reportConnectStatus();
                     } else {
                         Log.i(TAG, "onConnectionResult: connection failed");
+                        endpionts.get(endpointId).setStatus("connection failed");
+                        reportConnectStatus();
                     }
                 }
 
                 @Override
                 public void onDisconnected(String endpointId) {
                     Log.i(TAG, "onDisconnected: endpointId =" + endpointId);
-                    remoteEndpointStatus = "Disconnected";
+                    endpionts.get(endpointId).setStatus("Disconnected");
                     reportConnectStatus();
                 }
             };
 
 
     public void reportConnectStatus() {
-        Intent localIntent = new Intent(BROADCAST_ACTION)
-                .putExtra(EXTRA_NAME, remoteEndpointName)
-                .putExtra(EXTRA_STATUS, remoteEndpointStatus);
+        Intent localIntent = new Intent(BROADCAST_ACTION);
         LocalBroadcastManager.getInstance(NearbyService.this).sendBroadcast(localIntent);
     }
 
     public void sendStringPayload(String str) {
-        connectionsClient.sendPayload(remoteEndpointId, Payload.fromBytes(str.getBytes(UTF_8)));
+        connectionsClient.sendPayload(endpionts.keyAt(0), Payload.fromBytes(str.getBytes(UTF_8)));
     }
 
     public void sendFilePayload(Payload filePayload) {
-        connectionsClient.sendPayload(remoteEndpointId, filePayload);
+        connectionsClient.sendPayload(endpionts.keyAt(0), filePayload);
     }
 
     public void disconnect() {
-        connectionsClient.disconnectFromEndpoint(remoteEndpointId);
+        connectionsClient.disconnectFromEndpoint(endpionts.keyAt(0));
     }
 
     public void connect() {
-        connectionsClient.requestConnection(LOCAL_ENDPOINT_NAME, remoteEndpointId, connectionLifecycleCallback);
+        connectionsClient.requestConnection(LOCAL_ENDPOINT_NAME, endpionts.keyAt(0), connectionLifecycleCallback);
     }
 
     private final SimpleArrayMap<Long, Payload> incomingFilePayloads = new SimpleArrayMap<>();
