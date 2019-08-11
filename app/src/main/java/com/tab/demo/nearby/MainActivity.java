@@ -213,6 +213,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onStopButtonClick(View view) {
+        finish();
         mService.onDestroy();
         System.exit(0);
     }
