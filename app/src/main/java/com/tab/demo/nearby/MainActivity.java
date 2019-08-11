@@ -20,7 +20,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.collection.SimpleArrayMap;
 import androidx.core.content.ContextCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -53,15 +52,10 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int REQUEST_CODE_REQUIRED_PERMISSIONS = 1;
     private static final String LOCAL_ENDPOINT_NAME = Build.DEVICE;
-    private TextView tvRemoteEndpointID;
-    private TextView tvRemoteEndpointName;
-    private TextView tvConnectStatus;
     private TextView tvBytesReceived;
 
     private NearbyService mService;
     private boolean mBound = false;
-    private RecyclerView recyclerView;
-    private LinearLayoutManager layoutManager;
     private MyAdapter mAdapter;
 
 
@@ -69,17 +63,14 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle bundle) {
         super.onCreate(bundle);
         setContentView(R.layout.activity_main);
-        recyclerView = (RecyclerView) findViewById(R.id.my_recycler_view);
-        layoutManager = new LinearLayoutManager(this);
+        RecyclerView recyclerView = findViewById(R.id.my_recycler_view);
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
         mAdapter = new MyAdapter(this);
         recyclerView.setAdapter(mAdapter);
 
         TextView tvLocalEndpointName = findViewById(R.id.local_endpoint_name);
         tvLocalEndpointName.setText(getString(R.string.local_endpoint_name, LOCAL_ENDPOINT_NAME));
-        tvRemoteEndpointID = findViewById(R.id.remote_endpoint_id);
-        tvRemoteEndpointName = findViewById(R.id.remote_endpoint_name);
-        tvConnectStatus = findViewById(R.id.connect_status);
         tvBytesReceived = findViewById(R.id.bytes_received);
         if (!hasPermissions(this, REQUIRED_PERMISSIONS)) {
             requestPermissions(REQUIRED_PERMISSIONS, REQUEST_CODE_REQUIRED_PERMISSIONS);
@@ -92,12 +83,7 @@ public class MainActivity extends AppCompatActivity {
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            mAdapter.setmDataset(mService.getStatus()); ;
-//            if (!endpoints.isEmpty()) {
-//                tvRemoteEndpointID.setText("Remote endpoint id:" + endpoints.keyAt(0));
-//                tvRemoteEndpointName.setText("Remote endpoint name: " + endpoints.valueAt(0).getName());
-//                tvConnectStatus.setText("Connection status: " + endpoints.valueAt(0).getStatus());
-//            }
+            mAdapter.setmDataset(mService.getStatus());
         }
     };
 
@@ -220,10 +206,6 @@ public class MainActivity extends AppCompatActivity {
         mService.disconnect();
     }
 
-    private void resetView() {
-        tvRemoteEndpointName.setText(getString(R.string.no_remote_endpoint_join));
-        tvConnectStatus.setText(getString(R.string.status_disconnected));
-    }
 
     public void onStartButtonClick(View view) {
         mService.stopAdvertising();
