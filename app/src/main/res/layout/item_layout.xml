@@ -7,17 +7,17 @@
 
     <TextView
         android:id="@+id/remote_endpoint_id"
-        android:layout_width="100dp"
+        android:layout_width="160dp"
         android:layout_height="60dp" />
 
     <TextView
         android:id="@+id/remote_endpoint_name"
-        android:layout_width="100dp"
+        android:layout_width="160dp"
         android:layout_height="60dp" />
 
     <TextView
         android:id="@+id/remote_endpoint_status"
-        android:layout_width="100dp"
+        android:layout_width="160dp"
         android:layout_height="60dp" />
 
 

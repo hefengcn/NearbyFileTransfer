@@ -34,9 +34,9 @@ class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
     @Override
     public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
 
-        holder.mTv1.setText(mDataset.keyAt(position));
-        holder.mTv2.setText(mDataset.valueAt(position).getName());
-        holder.mTv3.setText(mDataset.valueAt(position).getStatus());
+        holder.mTv1.setText("ID: " + mDataset.keyAt(position));
+        holder.mTv2.setText("NAME: " + mDataset.valueAt(position).getName());
+        holder.mTv3.setText("STATUS: " + mDataset.valueAt(position).getStatus());
     }
 
     @Override
