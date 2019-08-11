@@ -23,6 +23,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.collection.SimpleArrayMap;
 import androidx.core.content.ContextCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.gms.nearby.connection.Payload;
 
@@ -58,12 +59,14 @@ public class MainActivity extends AppCompatActivity {
 
     private NearbyService mService;
     private boolean mBound = false;
+    private RecyclerView recyclerView;
 
 
     @Override
     protected void onCreate(Bundle bundle) {
         super.onCreate(bundle);
         setContentView(R.layout.activity_main);
+        recyclerView = (RecyclerView) findViewById(R.id.my_recycler_view);
 
         TextView tvLocalEndpointName = findViewById(R.id.local_endpoint_name);
         tvLocalEndpointName.setText(getString(R.string.local_endpoint_name, LOCAL_ENDPOINT_NAME));
