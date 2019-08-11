@@ -3,7 +3,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.tab.demo.nearby">
 
-    <!-- Required for Nearby Connections -->
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
@@ -25,7 +24,9 @@
         <service
             android:name=".NearbyService"
             android:enabled="true"
-            android:exported="true"></service>
+            android:exported="true">
+
+        </service>
 
         <provider
             android:name="androidx.core.content.FileProvider"

@@ -15,10 +15,6 @@
         style="@style/StatusText"
         android:layout_height="60dp" />
 
-
-
-
-
     <TextView
         android:id="@+id/remote_endpoint_name"
         style="@style/StatusText"

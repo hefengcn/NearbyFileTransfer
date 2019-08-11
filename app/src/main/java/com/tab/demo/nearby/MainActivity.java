@@ -23,6 +23,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.collection.SimpleArrayMap;
 import androidx.core.content.ContextCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.gms.nearby.connection.Payload;
@@ -60,6 +61,8 @@ public class MainActivity extends AppCompatActivity {
     private NearbyService mService;
     private boolean mBound = false;
     private RecyclerView recyclerView;
+    private LinearLayoutManager layoutManager;
+    private MyAdapter mAdapter;
 
 
     @Override
@@ -67,6 +70,10 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(bundle);
         setContentView(R.layout.activity_main);
         recyclerView = (RecyclerView) findViewById(R.id.my_recycler_view);
+        layoutManager = new LinearLayoutManager(this);
+        recyclerView.setLayoutManager(layoutManager);
+        mAdapter = new MyAdapter(this);
+        recyclerView.setAdapter(mAdapter);
 
         TextView tvLocalEndpointName = findViewById(R.id.local_endpoint_name);
         tvLocalEndpointName.setText(getString(R.string.local_endpoint_name, LOCAL_ENDPOINT_NAME));
@@ -85,12 +92,12 @@ public class MainActivity extends AppCompatActivity {
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            SimpleArrayMap<String, EndpointStatus> endpoints = mService.getStatus();
-            if (!endpoints.isEmpty()) {
-                tvRemoteEndpointID.setText("Remote endpoint id:" + endpoints.keyAt(0));
-                tvRemoteEndpointName.setText("Remote endpoint name: " + endpoints.valueAt(0).getName());
-                tvConnectStatus.setText("Connection status: " + endpoints.valueAt(0).getStatus());
-            }
+            mAdapter.setmDataset(mService.getStatus()); ;
+//            if (!endpoints.isEmpty()) {
+//                tvRemoteEndpointID.setText("Remote endpoint id:" + endpoints.keyAt(0));
+//                tvRemoteEndpointName.setText("Remote endpoint name: " + endpoints.valueAt(0).getName());
+//                tvConnectStatus.setText("Connection status: " + endpoints.valueAt(0).getStatus());
+//            }
         }
     };
 
