@@ -11,8 +11,20 @@ import androidx.collection.SimpleArrayMap;
 import androidx.recyclerview.widget.RecyclerView;
 
 class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
+    private static final String TAG = "MyAdapter";
     private Context mContext;
     private SimpleArrayMap<String, EndpointStatus> mDataset;
+
+    private ItemClickListener mItemClickListener;
+
+    public interface ItemClickListener {
+        public void onItemClick(int position);
+    }
+
+    public void setOnItemClickListener(ItemClickListener itemClickListener) {
+        this.mItemClickListener = itemClickListener;
+
+    }
 
     public MyAdapter(Context context) {
         this.mContext = context;
@@ -26,11 +38,20 @@ class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
     }
 
     @Override
-    public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull MyViewHolder holder, final int position) {
 
         holder.mTv1.setText("ID: " + mDataset.keyAt(position));
         holder.mTv2.setText("NAME: " + mDataset.valueAt(position).getName());
         holder.mTv3.setText("STATUS: " + mDataset.valueAt(position).getStatus());
+
+        if (mItemClickListener != null) {
+            holder.itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    mItemClickListener.onItemClick(position);
+                }
+            });
+        }
     }
 
     @Override

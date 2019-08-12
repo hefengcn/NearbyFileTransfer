@@ -95,8 +95,8 @@ public class NearbyService extends Service {
                 public void onEndpointFound(String endpointId, DiscoveredEndpointInfo info) {
                     Log.i(TAG, "onEndpointFound: endpointId =" + endpointId);
                     Log.i(TAG, "onEndpointFound: info.getEndpointName() =" + info.getEndpointName());
-                    connectionsClient.stopDiscovery();
-                    connectionsClient.requestConnection(LOCAL_ENDPOINT_NAME, endpointId, connectionLifecycleCallback);
+//                    connectionsClient.stopDiscovery();
+//                    connectionsClient.requestConnection(LOCAL_ENDPOINT_NAME, endpointId, connectionLifecycleCallback);
                     EndpointStatus status = new EndpointStatus();
                     status.setName(info.getEndpointName());
                     status.setStatus("found");
@@ -134,6 +134,7 @@ public class NearbyService extends Service {
                         Log.i(TAG, "onConnectionResult: connection successful");
                         Log.i(TAG, "onConnectionResult: endpointId =" + endpointId);
                         endpoints.get(endpointId).setStatus("Connected");
+                        connectionsClient.stopDiscovery();
                         reportConnectStatus();
                     } else {
                         Log.i(TAG, "onConnectionResult: connection failed");
@@ -164,12 +165,12 @@ public class NearbyService extends Service {
         connectionsClient.sendPayload(endpoints.keyAt(0), filePayload);
     }
 
-    public void disconnect() {
-        connectionsClient.disconnectFromEndpoint(endpoints.keyAt(0));
+    public void disconnect(int position) {
+        connectionsClient.disconnectFromEndpoint(endpoints.keyAt(position));
     }
 
-    public void connect() {
-        connectionsClient.requestConnection(LOCAL_ENDPOINT_NAME, endpoints.keyAt(0), connectionLifecycleCallback);
+    public void connect(int position) {
+        connectionsClient.requestConnection(LOCAL_ENDPOINT_NAME, endpoints.keyAt(position), connectionLifecycleCallback);
     }
 
     private final SimpleArrayMap<Long, Payload> incomingFilePayloads = new SimpleArrayMap<>();

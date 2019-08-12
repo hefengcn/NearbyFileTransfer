@@ -77,6 +77,13 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(layoutManager);
         mAdapter = new MyAdapter(this);
         recyclerView.setAdapter(mAdapter);
+        mAdapter.setOnItemClickListener(new MyAdapter.ItemClickListener() {
+            @Override
+            public void onItemClick(int position) {
+                connect(position);
+                Toast.makeText(MainActivity.this, "item " + position + "clicked", Toast.LENGTH_SHORT).show();
+            }
+        });
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(new Intent(MainActivity.this, NearbyService.class));
@@ -113,6 +120,7 @@ public class MainActivity extends AppCompatActivity {
         LocalBroadcastManager.getInstance(this).registerReceiver(mReceiver, intentFilter);
 
     }
+
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -198,14 +206,12 @@ public class MainActivity extends AppCompatActivity {
         recreate();
     }
 
-    public void connect(View view) {
-        Log.i(TAG, "connect clicked");
-        mService.connect();
+    public void connect(int position) {
+        mService.connect(position);
     }
 
-    public void disconnect(View view) {
-        Log.i(TAG, "disconnect clicked");
-        mService.disconnect();
+    public void disconnect(int position) {
+        mService.disconnect(position);
     }
 
 
