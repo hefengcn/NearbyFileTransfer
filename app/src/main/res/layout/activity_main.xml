@@ -28,14 +28,14 @@
         style="@style/Widget.AppCompat.Button.Colored"
         android:layout_width="match_parent"
         android:layout_height="60dp"
-        android:onClick="sendBytes"
+        android:onClick="onSendBytesButtonClicked"
         android:text="@string/send_bytes" />
 
     <Button
         style="@style/Widget.AppCompat.Button.Colored"
         android:layout_width="match_parent"
         android:layout_height="60dp"
-        android:onClick="sendFile"
+        android:onClick="onSendFileButtonClicked"
         android:text="@string/send_file" />
 
     <Button

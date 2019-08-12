@@ -44,9 +44,9 @@ public class MainActivity extends AppCompatActivity {
                     Manifest.permission.BLUETOOTH_ADMIN,
                     Manifest.permission.ACCESS_WIFI_STATE,
                     Manifest.permission.CHANGE_WIFI_STATE,
-                    Manifest.permission.ACCESS_COARSE_LOCATION,
                     Manifest.permission.READ_EXTERNAL_STORAGE,
                     Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
                     Manifest.permission.ACCESS_FINE_LOCATION
             };
 
@@ -63,54 +63,40 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle bundle) {
         super.onCreate(bundle);
         setContentView(R.layout.activity_main);
+
+        if (!hasPermissions(this, REQUIRED_PERMISSIONS)) {
+            requestPermissions(REQUIRED_PERMISSIONS, REQUEST_CODE_REQUIRED_PERMISSIONS);
+        }
+
+        TextView tvLocalEndpointName = findViewById(R.id.local_endpoint_name);
+        tvLocalEndpointName.setText(getString(R.string.local_endpoint_name, LOCAL_ENDPOINT_NAME));
+        tvBytesReceived = findViewById(R.id.bytes_received);
+
         RecyclerView recyclerView = findViewById(R.id.my_recycler_view);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
         mAdapter = new MyAdapter(this);
         recyclerView.setAdapter(mAdapter);
 
-        TextView tvLocalEndpointName = findViewById(R.id.local_endpoint_name);
-        tvLocalEndpointName.setText(getString(R.string.local_endpoint_name, LOCAL_ENDPOINT_NAME));
-        tvBytesReceived = findViewById(R.id.bytes_received);
-        if (!hasPermissions(this, REQUIRED_PERMISSIONS)) {
-            requestPermissions(REQUIRED_PERMISSIONS, REQUEST_CODE_REQUIRED_PERMISSIONS);
-        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(new Intent(MainActivity.this, NearbyService.class));
         }
     }
-
-    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            mAdapter.setmDataset(mService.getStatus());
-        }
-    };
 
     @Override
     protected void onStart() {
         super.onStart();
         Intent intent = new Intent(this, NearbyService.class);
         bindService(intent, connection, Context.BIND_AUTO_CREATE);
-        IntentFilter intentFilter = new IntentFilter(BROADCAST_ACTION);
-        LocalBroadcastManager.getInstance(this).registerReceiver(mReceiver, intentFilter);
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-
     }
 
     private ServiceConnection connection = new ServiceConnection() {
-
         @Override
-        public void onServiceConnected(ComponentName className,
-                                       IBinder service) {
+        public void onServiceConnected(ComponentName className, IBinder service) {
             NearbyService.LocalBinder binder = (NearbyService.LocalBinder) service;
             mService = binder.getService();
             mBound = true;
-            mService.reportConnectStatus();
+            mAdapter.setmDataset(mService.getStatus());
         }
 
         @Override
@@ -119,12 +105,33 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    public void sendBytes(View view) {
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (mBound) mService.reportConnectStatus();
+        IntentFilter intentFilter = new IntentFilter(BROADCAST_ACTION);
+        LocalBroadcastManager.getInstance(this).registerReceiver(mReceiver, intentFilter);
+
+    }
+    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            mAdapter.setmDataset(mService.getStatus());
+        }
+    };
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(mReceiver);
+    }
+
+    public void onSendBytesButtonClicked(View view) {
         String str = String.valueOf(new Random().nextInt(100));
         mService.sendStringPayload(str);
     }
 
-    public void sendFile(View view) {
+    public void onSendFileButtonClicked(View view) {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("image/*");
@@ -153,20 +160,15 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
-        mService.stopDiscovery();
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(mReceiver);
+        if (mBound) unbindService(connection);
+        mBound = false;
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (mBound) unbindService(connection);
-        mBound = false;
     }
 
-    /**
-     * Returns true if the app was granted all the permissions. Otherwise, returns false.
-     */
     private static boolean hasPermissions(Context context, String... permissions) {
         for (String permission : permissions) {
             if (ContextCompat.checkSelfPermission(context, permission)
@@ -208,7 +210,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     public void onStartButtonClick(View view) {
-        mService.stopAdvertising();
+        //mService.stopAdvertising();
         mService.startDiscovery();
     }
 
