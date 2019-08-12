@@ -12,17 +12,11 @@ import androidx.recyclerview.widget.RecyclerView;
 
 class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
     private Context mContext;
-
-    public void setmDataset(SimpleArrayMap<String, EndpointStatus> mDataset) {
-        this.mDataset = mDataset;
-        notifyDataSetChanged();
-    }
-
     private SimpleArrayMap<String, EndpointStatus> mDataset;
 
     public MyAdapter(Context context) {
         this.mContext = context;
-        this.mDataset = new SimpleArrayMap<String, EndpointStatus>();
+        this.mDataset = new SimpleArrayMap<>();
     }
 
     @NonNull
@@ -53,6 +47,11 @@ class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
             mTv2 = itemView.findViewById(R.id.remote_endpoint_name);
             mTv3 = itemView.findViewById(R.id.remote_endpoint_status);
         }
+    }
+
+    public void setmDataset(SimpleArrayMap<String, EndpointStatus> mDataset) {
+        this.mDataset = mDataset;
+        notifyDataSetChanged();
     }
 
 }
